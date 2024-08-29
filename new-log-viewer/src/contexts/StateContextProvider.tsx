@@ -30,6 +30,9 @@ import {
     URL_SEARCH_PARAMS_DEFAULT,
     UrlContext,
 } from "./UrlContextProvider";
+import {
+    LOG_LEVEL
+} from "../typings/logs";
 
 
 interface StateContextType {
@@ -39,6 +42,7 @@ interface StateContextType {
     numEvents: number,
     numPages: number,
     pageNum: Nullable<number>
+    verbosity: boolean[]
 }
 const StateContext = createContext<StateContextType>({} as StateContextType);
 
@@ -52,6 +56,7 @@ const STATE_DEFAULT = Object.freeze({
     numEvents: 0,
     numPages: 0,
     pageNum: 0,
+    verbosity: Array(LOG_LEVEL.TOTAL).fill(true) // Initialize with all levels enabled
 });
 
 interface StateContextProviderProps {
@@ -113,6 +118,7 @@ const StateContextProvider = ({children}: StateContextProviderProps) => {
     const logEventNumRef = useRef(logEventNum);
     const numPagesRef = useRef<number>(STATE_DEFAULT.numPages);
     const pageNumRef = useRef<Nullable<number>>(STATE_DEFAULT.pageNum);
+    const [verbosity] = useState<boolean[]>(STATE_DEFAULT.verbosity);
 
     const mainWorkerRef = useRef<null|Worker>(null);
 
@@ -240,6 +246,25 @@ const StateContextProvider = ({children}: StateContextProviderProps) => {
         loadFile,
     ]);
 
+    // Effect to run on verbosity change
+    useEffect(() => {
+        // Example: Log current verbosity settings or perform other actions
+        console.log('Verbosity settings changed:', verbosity);
+
+        // You can also perform side-effects here based on verbosity levels
+        // For instance, enable/disable logging or other features based on verbosity
+
+        // Example: If verbosity for INFO level is enabled, perform an action
+        if (verbosity[LOG_LEVEL.INFO]) {
+            console.log('INFO logging is enabled');
+        }
+
+        // Cleanup function if needed
+        return () => {
+            // Cleanup logic if needed
+        };
+    }, [verbosity]); // Dependency array includes verbosity
+
     return (
         <StateContext.Provider
             value={{
@@ -249,6 +274,7 @@ const StateContextProvider = ({children}: StateContextProviderProps) => {
                 numEvents: numEvents,
                 numPages: numPagesRef.current,
                 pageNum: pageNumRef.current,
+                verbosity: verbosity,
             }}
         >
             {children}

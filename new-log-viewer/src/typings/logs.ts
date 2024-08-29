@@ -5,7 +5,8 @@ enum LOG_LEVEL {
     INFO,
     WARN,
     ERROR,
-    FATAL
+    FATAL,
+    TOTAL,
 }
 
 const INVALID_TIMESTAMP_VALUE = 0;
