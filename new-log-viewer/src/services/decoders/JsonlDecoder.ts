@@ -39,7 +39,10 @@ class JsonlDecoder implements Decoder {
 
     #logEvents: JsonLogEvent[] = [];
 
+    #filteredLogEvents: JsonLogEvent[] = [];
+
     #invalidLogEventIdxToRawLine: Map<number, string> = new Map();
+    #filteredInvalidLogEventIdxToRawLine: Map<number, string> = new Map();
 
     // @ts-expect-error #formatter is set in the constructor by `setDecoderOptions()`
     #formatter: Formatter;
@@ -60,7 +63,7 @@ class JsonlDecoder implements Decoder {
     }
 
     getEstimatedNumEvents (): number {
-        return this.#logEvents.length;
+        return this.#filteredLogEvents.length;
     }
 
     buildIdx (beginIdx: number, endIdx: number): Nullable<LogEventCount> {
@@ -109,11 +112,37 @@ class JsonlDecoder implements Decoder {
                 this.#logEvents.push(logEvent);
             }
         }
+        this.#filteredLogEvents = new Array(...this.#logEvents)
+        this.#filteredInvalidLogEventIdxToRawLine = new Map(this.#invalidLogEventIdxToRawLine)
 
         return {
             numValidEvents: endIdx - beginIdx - numInvalidEvents,
             numInvalidEvents: numInvalidEvents,
         };
+    }
+
+    updateVerbosity (verbosity: number): boolean {
+        this.#filteredLogEvents = [];
+        this.#filteredInvalidLogEventIdxToRawLine.clear
+
+        console.log("is this being called")
+
+        for (let index = 0; index < this.#logEvents.length; index++) {
+            let logEvent = this.#logEvents[index] as JsonLogEvent;
+            console.log(logEvent.level)
+            console.log(1 << logEvent.level)
+            console.log(verbosity)
+
+            if ((1 << logEvent.level) & verbosity) {
+                if (this.#invalidLogEventIdxToRawLine.has(index)) {
+                    this.#filteredInvalidLogEventIdxToRawLine.set(index, this.#invalidLogEventIdxToRawLine.get(index) as string);
+                }
+                console.log("do i get here")
+
+                this.#filteredLogEvents.push(logEvent)
+            }
+        }
+        return true
     }
 
     setDecoderOptions (options: JsonlDecoderOptionsType): boolean {
@@ -142,15 +171,18 @@ class JsonlDecoder implements Decoder {
             let timestamp: number;
             let message: string;
             let logLevel: LOG_LEVEL;
-            if (this.#invalidLogEventIdxToRawLine.has(logEventIdx)) {
+            if (this.#filteredInvalidLogEventIdxToRawLine.has(logEventIdx)) {
                 timestamp = INVALID_TIMESTAMP_VALUE;
-                message = `${this.#invalidLogEventIdxToRawLine.get(logEventIdx)}\n`;
+                message = `${this.#filteredInvalidLogEventIdxToRawLine.get(logEventIdx)}\n`;
                 logLevel = LOG_LEVEL.NONE;
             } else {
                 // Explicit cast since typescript thinks `#logEvents[logEventIdx]` can be undefined,
                 // but it shouldn't be since we performed a bounds check at the beginning of the
                 // method.
-                const logEvent: JsonLogEvent = this.#logEvents[logEventIdx] as JsonLogEvent;
+                console.log(logEventIdx)
+                console.log(`This is end ${endIdx}`)
+                console.log("am i here")
+                const logEvent: JsonLogEvent = this.#filteredLogEvents[logEventIdx] as JsonLogEvent;
                 let jsonLog: JsonObject = logEvent.jsonLog;
                 (
                     {timestamp, message} = this.#formatter.formatLogEvent(jsonLog)

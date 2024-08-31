@@ -58,6 +58,14 @@ interface Decoder {
      * @param options
      * @return Whether the options were successfully set.
      */
+    updateVerbosity(verbosity: number): boolean;
+
+    /**
+     * Sets options for the decoder.
+     *
+     * @param options
+     * @return Whether the options were successfully set.
+     */
     setDecoderOptions(options: DecoderOptionsType): boolean;
 
     /**

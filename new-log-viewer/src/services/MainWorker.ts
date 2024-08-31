@@ -70,6 +70,20 @@ onmessage = async (ev: MessageEvent<MainWorkerReqMessage>) => {
                     LOG_FILE_MANAGER.loadPage(args.cursor)
                 );
                 break;
+            case WORKER_REQ_CODE.UPDATE_VERBOSITY:
+                if (null === LOG_FILE_MANAGER) {
+                    throw new Error("Log file manager hasn't been initialized");
+                }
+                LOG_FILE_MANAGER.updateVerbosity(args.verbosity)
+                postResp(
+                    WORKER_RESP_CODE.NUM_EVENTS,
+                    {numEvents: LOG_FILE_MANAGER.numEvents}
+                );
+                postResp(
+                    WORKER_RESP_CODE.PAGE_DATA,
+                    LOG_FILE_MANAGER.loadPage(args.cursor)
+                );
+                break;
             default:
                 console.error(`Unexpected ev.data: ${JSON.stringify(ev.data)}`);
                 break;

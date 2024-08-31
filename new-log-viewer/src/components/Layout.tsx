@@ -30,6 +30,9 @@ import {
 } from "../utils/math";
 import Editor from "./Editor";
 import {goToPositionAndCenter} from "./Editor/MonacoInstance/utils";
+import {
+    LOG_LEVEL,
+} from "../typings/logs";
 
 
 const formFields = [
@@ -148,6 +151,48 @@ const ConfigForm = () => {
     );
 };
 
+const VerbosityFilter: React.FC = () => {
+    // Access verbosity and setVerbosity from context
+    const { verbosity, setVerbosity } = useContext(StateContext);
+
+    const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const level = LOG_LEVEL[event.target.name as keyof typeof LOG_LEVEL];
+        const isChecked = event.target.checked;
+
+        // Compute the bitmask for the current level
+        const bitmask = 1 << level; // Shift 1 to the left by `level` bits
+
+        // Update verbosity bit field
+        const newVerbosity = isChecked
+            ? verbosity | bitmask // Set the bit
+            : verbosity & ~bitmask; // Clear the bit
+
+        setVerbosity(newVerbosity); // Directly set the new verbosity number
+    };
+
+    return (
+        <div style={{ marginTop: '20px' }}>
+            <h4>Verbosity Filter</h4>
+            {Object.keys(LOG_LEVEL).filter(key => isNaN(Number(key))).map((key) => {
+                const level = LOG_LEVEL[key as keyof typeof LOG_LEVEL];
+                const bitmask = 1 << level;
+                return (
+                    <label key={key}>
+                        <input
+                            type="checkbox"
+                            name={key}
+                            checked={(verbosity & bitmask) !== 0}
+                            onChange={handleCheckboxChange}
+                        />
+                        {key}
+                    </label>
+                );
+            })}
+        </div>
+    );
+};
+
+
 /**
  * Handles `logEventNum` input value change for debugging.
  *
@@ -234,6 +279,7 @@ const Layout = () => {
         numEventsRef.current = numEvents;
     }, [numEvents]);
 
+
     return (
         <>
             <div style={{display: "flex", flexDirection: "column", height: "100%"}}>
@@ -261,6 +307,8 @@ const Layout = () => {
                 <div style={{flexDirection: "column", flexGrow: 1}}>
                     <Editor onCustomAction={handleCustomAction}/>
                 </div>
+
+                <VerbosityFilter />
             </div>
         </>
     );

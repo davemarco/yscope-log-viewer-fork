@@ -31,7 +31,7 @@ import {
     UrlContext,
 } from "./UrlContextProvider";
 import {
-    LOG_LEVEL
+    LOG_LEVEL_TOTAL
 } from "../typings/logs";
 
 
@@ -42,7 +42,8 @@ interface StateContextType {
     numEvents: number,
     numPages: number,
     pageNum: Nullable<number>
-    verbosity: boolean[]
+    verbosity: number
+    setVerbosity: (verbosity: number) => void,
 }
 const StateContext = createContext<StateContextType>({} as StateContextType);
 
@@ -56,7 +57,9 @@ const STATE_DEFAULT = Object.freeze({
     numEvents: 0,
     numPages: 0,
     pageNum: 0,
-    verbosity: Array(LOG_LEVEL.TOTAL).fill(true) // Initialize with all levels enabled
+    verbosity: Number.MAX_SAFE_INTEGER,
+    //verbosity: 0,
+    setVerbosity: () => null,
 });
 
 interface StateContextProviderProps {
@@ -113,12 +116,12 @@ const StateContextProvider = ({children}: StateContextProviderProps) => {
 
     const [logData, setLogData] = useState<string>(STATE_DEFAULT.logData);
     const [numEvents, setNumEvents] = useState<number>(STATE_DEFAULT.numEvents);
+    const [verbosity, setVerbosity] = useState<number>(STATE_DEFAULT.verbosity);
     const beginLineNumToLogEventNumRef =
         useRef<BeginLineNumToLogEventNumMap>(STATE_DEFAULT.beginLineNumToLogEventNum);
     const logEventNumRef = useRef(logEventNum);
     const numPagesRef = useRef<number>(STATE_DEFAULT.numPages);
     const pageNumRef = useRef<Nullable<number>>(STATE_DEFAULT.pageNum);
-    const [verbosity] = useState<boolean[]>(STATE_DEFAULT.verbosity);
 
     const mainWorkerRef = useRef<null|Worker>(null);
 
@@ -246,24 +249,15 @@ const StateContextProvider = ({children}: StateContextProviderProps) => {
         loadFile,
     ]);
 
-    // Effect to run on verbosity change
     useEffect(() => {
-        // Example: Log current verbosity settings or perform other actions
-        console.log('Verbosity settings changed:', verbosity);
-
-        // You can also perform side-effects here based on verbosity levels
-        // For instance, enable/disable logging or other features based on verbosity
-
-        // Example: If verbosity for INFO level is enabled, perform an action
-        if (verbosity[LOG_LEVEL.INFO]) {
-            console.log('INFO logging is enabled');
+        if (STATE_DEFAULT.verbosity === verbosity) {
+            return;
         }
-
-        // Cleanup function if needed
-        return () => {
-            // Cleanup logic if needed
-        };
-    }, [verbosity]); // Dependency array includes verbosity
+        mainWorkerPostReq(WORKER_REQ_CODE.UPDATE_VERBOSITY, {
+            cursor: {code: CURSOR_CODE.PAGE_NUM, args: {pageNum: 1}},
+            verbosity: verbosity
+        });
+    }, [verbosity]);
 
     return (
         <StateContext.Provider
@@ -275,6 +269,7 @@ const StateContextProvider = ({children}: StateContextProviderProps) => {
                 numPages: numPagesRef.current,
                 pageNum: pageNumRef.current,
                 verbosity: verbosity,
+                setVerbosity: setVerbosity,
             }}
         >
             {children}

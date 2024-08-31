@@ -6,12 +6,14 @@ enum LOG_LEVEL {
     WARN,
     ERROR,
     FATAL,
-    TOTAL,
 }
+
+const LOG_LEVEL_TOTAL = LOG_LEVEL.FATAL+1;
 
 const INVALID_TIMESTAMP_VALUE = 0;
 
 export {
     INVALID_TIMESTAMP_VALUE,
     LOG_LEVEL,
+    LOG_LEVEL_TOTAL
 };
