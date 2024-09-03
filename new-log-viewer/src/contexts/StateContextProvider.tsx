@@ -58,7 +58,6 @@ const STATE_DEFAULT = Object.freeze({
     numPages: 0,
     pageNum: 0,
     verbosity: Number.MAX_SAFE_INTEGER,
-    //verbosity: 0,
     setVerbosity: () => null,
 });
 

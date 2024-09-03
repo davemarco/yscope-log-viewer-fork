@@ -173,9 +173,6 @@ class JsonlDecoder implements Decoder {
                 // Explicit cast since typescript thinks `#logEvents[logEventIdx]` can be undefined,
                 // but it shouldn't be since we performed a bounds check at the beginning of the
                 // method.
-                console.log(logEventIdx)
-                console.log(`This is end ${endIdx}`)
-                console.log("am i here")
                 const logEvent: JsonLogEvent = this.#filteredLogEvents[logEventIdx] as JsonLogEvent;
                 let jsonLog: JsonObject = logEvent.jsonLog;
                 (
