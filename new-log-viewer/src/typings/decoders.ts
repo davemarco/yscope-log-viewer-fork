@@ -52,12 +52,6 @@ interface Decoder {
      */
     buildIdx(beginIdx: number, endIdx: number): Nullable<LogEventCount>;
 
-    /**
-     * Sets options for the decoder.
-     *
-     * @param options
-     * @return Whether the options were successfully set.
-     */
     updateVerbosity(verbosity: number): boolean;
 
     /**

@@ -129,16 +129,10 @@ class JsonlDecoder implements Decoder {
 
         for (let index = 0; index < this.#logEvents.length; index++) {
             let logEvent = this.#logEvents[index] as JsonLogEvent;
-            console.log(logEvent.level)
-            console.log(1 << logEvent.level)
-            console.log(verbosity)
-
             if ((1 << logEvent.level) & verbosity) {
                 if (this.#invalidLogEventIdxToRawLine.has(index)) {
                     this.#filteredInvalidLogEventIdxToRawLine.set(index, this.#invalidLogEventIdxToRawLine.get(index) as string);
                 }
-                console.log("do i get here")
-
                 this.#filteredLogEvents.push(logEvent)
             }
         }
