@@ -16,6 +16,8 @@ import {formatSizeInBytes} from "../utils/units";
 import {getBasenameFromUrlOrDefault} from "../utils/url";
 import ClpIrDecoder from "./decoders/ClpIrDecoder";
 import JsonlDecoder from "./decoders/JsonlDecoder";
+import ClpDecoder from "./decoders/ClpDecoder";
+import ClpArchiveDecoder from "./decoders/ClpDecoder2";
 
 
 /**
@@ -128,6 +130,9 @@ class LogFileManager {
         let decoder: Decoder;
         if (fileName.endsWith(".jsonl")) {
             decoder = new JsonlDecoder(fileData, decoderOptions);
+        } else if (fileName.endsWith(".clp")) {
+            //decoder = new ClpDecoder(fileData,decoderOptions);
+            decoder = await ClpArchiveDecoder.create(fileData)
         } else if (fileName.endsWith(".clp.zst")) {
             decoder = await ClpIrDecoder.create(fileData);
         } else {

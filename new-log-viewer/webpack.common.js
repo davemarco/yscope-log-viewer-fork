@@ -2,6 +2,7 @@
 
 const path = require("path");
 
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const MonacoWebpackPlugin = require("monaco-editor-webpack-plugin");
 
@@ -62,6 +63,14 @@ module.exports = {
         publicPath: "auto",
     },
     plugins: [
+        new CopyWebpackPlugin({
+            patterns: [
+                {
+                    from: "./node_modules/sql.js/dist/sql-wasm.wasm",
+                    to: "static/js/",
+                },
+            ],
+        }),
         new HtmlWebpackPlugin({
             template: path.resolve(__dirname, "public", "index.html"),
         }),
@@ -137,6 +146,12 @@ module.exports = {
         }),
     ],
     resolve: {
+        fallback: {
+            crypto: require.resolve("crypto-browserify"),
+            fs: require.resolve("browserify-fs"),
+            stream: require.resolve("stream-browserify"),
+            vm: false,
+        },
         extensions: [
             ".js",
             ".json",
