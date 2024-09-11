@@ -43,7 +43,7 @@ const minSupportedVersion: string = "0.1.0";
  * @return Metadata to decode single file archive format.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const getSingleFileArchiveMetadata = (
+const getSingleFileArchive = (
     dataInputStream: DataInputStream
 ) => {
     // Skip over magic number, which is not currently used in decoding.
@@ -73,14 +73,14 @@ const getSingleFileArchiveMetadata = (
 };
 
 /**
- * Parses single file archive metadata and retrieves byte sizes of all files
+ * Deserializes single file archive metadata and retrieves byte sizes of all files
  * in the archive. The sizes are needed to accurately decode individual files.
  *
  * @param singleFileArchiveMetadata Metadata containing archived file sizes.
  * @return Array with two elements. The first element is an object containing sizes of non-segment
  * files. The second element is an array containing the size for each segment.
  */
-const parseSingleFileArchiveMetadata = (
+const deserializeSingleFileArchive = (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     singleFileArchiveMetadata: any
 ): [NonSegmentFileSizes, SegmentFileSizes] => {
@@ -196,8 +196,14 @@ const getSegmentInfos = async (
 };
 
 export {
+    deserializeSingleFileArchive,
     getSegmentInfos,
-    getSingleFileArchiveMetadata,
-    parseSingleFileArchiveMetadata};
+    getSingleFileArchive
+};
+export type {
+    NonSegmentFileSizes,
+    SegmentFileSizes,
+    SegmentInfo
+};
 
 
