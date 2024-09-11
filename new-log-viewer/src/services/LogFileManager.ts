@@ -75,12 +75,6 @@ class LogFileManager {
         this.#pageSize = pageSize;
         this.#decoder = decoder;
 
-        // Build index for the entire file
-        const buildIdxResult = decoder.buildIdx(0, LOG_EVENT_FILE_END_IDX);
-        if (null !== buildIdxResult && 0 < buildIdxResult.numInvalidEvents) {
-            console.error("Invalid events found in decoder.buildIdx():", buildIdxResult);
-        }
-
         this.#numEvents = decoder.getEstimatedNumEvents();
         console.log(`Found ${this.#numEvents} log events.`);
     }
@@ -109,6 +103,12 @@ class LogFileManager {
     ): Promise<LogFileManager> {
         const {fileName, fileData} = await loadFile(fileSrc);
         const decoder = await LogFileManager.#initDecoder(fileName, fileData, decoderOptions);
+
+        // Build index for the entire file
+        const buildIdxResult = await decoder.buildIdx(0, LOG_EVENT_FILE_END_IDX);
+        if (null !== buildIdxResult && 0 < buildIdxResult.numInvalidEvents) {
+            console.error("Invalid events found in decoder.buildIdx():", buildIdxResult);
+        }
 
         return new LogFileManager(decoder, fileName, pageSize);
     }

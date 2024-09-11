@@ -50,7 +50,7 @@ interface Decoder {
      * un-deserializable ("invalid") log events within the range; or null if any log event in the
      * range doesn't exist (e.g., the range exceeds the number of log events in the file).
      */
-    buildIdx(beginIdx: number, endIdx: number): Nullable<LogEventCount>;
+    buildIdx(beginIdx: number, endIdx: number): Promise<Nullable<LogEventCount>>;
 
     /**
      * Sets options for the decoder.
