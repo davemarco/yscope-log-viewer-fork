@@ -1,10 +1,9 @@
-import {Nullable} from "../../../typings/common";
-import {LogEventCount} from "../../../typings/decoders";
 import {LOG_LEVEL, LOG_LEVEL_NAMES_LIST} from "../../../typings/logs";
 import {Placeholder} from "../../../typings/placeholder";
 import {DataInputStream} from "../../../utils/datastream";
 import {lzmaDecompress} from "../../../utils/xz";
-import * as Metadata from "./metadata";
+import {ArchiveLogEvent} from "./logevent";
+import {SegmentFileSizes, SegmentInfo} from "./metadata";
 
 /**
  * Parsed segment data.
@@ -17,155 +16,157 @@ interface Segment {
   logTypes: bigint[];
   variables: bigint[];
 }
-
-interface LogEvent {
-  timestamp: bigint;
-  logLevel: LOG_LEVEL;
-  logType: Uint8Array;
-  dictVars: Uint8Array[];
-  encodedVars: bigint[];
-}
-
 /**
- * Deserialize all segments, and convert segments into logEvents. All log
- * events are combined into a single array which is stored as a class field.
+ * Deserialize all segments then reconstruct into logEvents.
  *
- * @return Count of deserialized log events.
+ * @param dataInputStream Byte stream containing single file archive with offset
+ * at start of segments.
+ * @param segmentSize Array of byte sizes for each segment in archive.
+ * @param segmentInfos Byte sizes for non-segment archive files.
+ * @param logTypeDict Archive log type dictionary.
+ * @param varDict Archive variable dictionary.
+ * @return Array with combined log events from all segments.
  */
 const deserializeSegments = async (
     dataInputStream: DataInputStream,
-    segmentSizes: Metadata.SegmentFileSizes,
-    segmentInfos: Metadata.SegmentInfo[],
-    logEvents: LogEvent[],
+    segmentSizes: SegmentFileSizes,
+    segmentInfos: SegmentInfo[],
     logTypeDict: Uint8Array[],
     varDict: Uint8Array[]
-): Promise<Nullable<LogEventCount>> => {
-    for (let index = 0; index < segmentSizes.length; index++) {
-        const size: number | undefined = segmentSizes[index];
-        const segmentInfo: Metadata.SegmentInfo | undefined = segmentInfos[index];
+): Promise<ArchiveLogEvent[]> => {
+  const logEvents: ArchiveLogEvent[] = [];
+  for (let index = 0; index < segmentSizes.length; index++) {
+    const size: number | undefined = segmentSizes[index];
+    const segmentInfo: SegmentInfo | undefined = segmentInfos[index];
 
-        if (!size || !segmentInfo) {
-            throw new Error("Segment metadata was not found");
-        }
-
-        const segment: Segment = await deserializeSegment(
-            dataInputStream,
-            size,
-            segmentInfo
-        );
-
-        console.log(
-            `Retrieved ${segmentInfo.numMessages} messages from segment ${index}`
-        );
-        segmentToLogEvents(segment, logEvents, logTypeDict, varDict);
+    if (!size || !segmentInfo) {
+      throw new Error("Segment metadata was not found");
     }
-    return {
-        numValidEvents: logEvents.length,
-        numInvalidEvents: 0,
-    };
+
+    const segment: Segment = await deserializeSegment(
+        dataInputStream,
+        size,
+        segmentInfo
+    );
+
+    console.log(
+        `Retrieved ${segmentInfo.numMessages} messages from segment ${index}`
+    );
+    toLogEvents(segment, logEvents, logTypeDict, varDict);
+  }
+  return logEvents;
 };
 
 /**
- * Decompress segment with xz then parse from binary into arrays for timestamps, log types and
- * variables. The segment is compressed in columnar format, so can parse all the timestamps, then
- * log types and finally variables. Number of timestamps, log types, and variables are known since
- * already queried from archive database.
+ * Decompress segment with xz then deserialize into three arrays for timestamps,
+ * log types and variables. The segment is serialized in columnar format, so
+ * can parse the timestamps, log types and variables sequentially.
  *
- * @param dataInputStream Byte stream containing single file archive.
+ * @param dataInputStream Byte stream containing single file archive with offset
+ * at start of segment.
  * @param segmentSize Byte size of segment.
  * @param segmentInfo Segment metadata.
- * @return Parsed segment data.
+ * @return Deserialized segment.
  */
 const deserializeSegment = async (
     dataInputStream: DataInputStream,
     segmentSize: number,
-    segmentInfo: Metadata.SegmentInfo
+    segmentInfo: SegmentInfo
 ): Promise<Segment> => {
-    const compressedBytes: Uint8Array = dataInputStream.readFully(segmentSize);
-    const decompressedBytes =
-    await lzmaDecompress(compressedBytes);
-    const segmentStream: DataInputStream = new DataInputStream(
-        decompressedBytes,
-        true
-    );
+  const compressedBytes: Uint8Array = dataInputStream.readFully(segmentSize);
+  const decompressedBytes = await lzmaDecompress(compressedBytes);
+  const segmentStream: DataInputStream = new DataInputStream(
+      decompressedBytes,
+      true
+  );
 
-    const segment: Segment = {
-        timestamps: [],
-        logTypes: [],
-        variables: [],
-    };
+  const segment: Segment = {
+    timestamps: [],
+    logTypes: [],
+    variables: [],
+  };
 
-    // Parse data from columnar format.
-    for (let i = 0; i < segmentInfo.numMessages; i++) {
-        segment.timestamps.push(segmentStream.readUnsignedLong());
-    }
-    for (let i = 0; i < segmentInfo.numMessages; i++) {
-        segment.logTypes.push(segmentStream.readUnsignedLong());
-    }
-    for (let i = 0; i < segmentInfo.numVariables; i++) {
-        segment.variables.push(segmentStream.readUnsignedLong());
-    }
+  // Parse data from columnar format.
+  for (let i = 0; i < segmentInfo.numMessages; i++) {
+    segment.timestamps.push(segmentStream.readUnsignedLong());
+  }
+  for (let i = 0; i < segmentInfo.numMessages; i++) {
+    segment.logTypes.push(segmentStream.readUnsignedLong());
+  }
+  for (let i = 0; i < segmentInfo.numVariables; i++) {
+    segment.variables.push(segmentStream.readUnsignedLong());
+  }
 
-    return segment;
+  return segment;
 };
 
 /**
- * Converts deserialized segment into log events and adds new log events to combined array for
- * all segments.
+ * Converts segment into log events and adds new log events to combined array
+ * for all segments.
  *
  * @param segment Deserialized segment.
+ * @param logEvents Array with combined log events from all segments.
+ * @param logTypeDict Archive log type dictionary.
+ * @param varDict Archive variable dictionary.
  */
-const segmentToLogEvents = (segment: Segment, logEvents: LogEvent[], logTypeDict: Uint8Array[], varDict: Uint8Array[]) => {
-    // Iterator over segment variables. Segment variables are either an index (for dictionary
-    // variables) or an encoded value.
-    const variablesIterator: Iterator<bigint> =
+const toLogEvents = (
+    segment: Segment,
+    logEvents: ArchiveLogEvent[],
+    logTypeDict: Uint8Array[],
+    varDict: Uint8Array[]
+) => {
+  // Iterator over segment variables. Segment variables are either an index (for dictionary
+  // variables) or an encoded value.
+  const variablesIterator: Iterator<bigint> =
     segment.variables[Symbol.iterator]();
 
-    const numMessages: number = segment.timestamps.length;
-    for (let i = 0; i < numMessages; i++) {
-        const timestamp: bigint | undefined = segment.timestamps[i];
-        if (!timestamp) {
-            throw new Error("Timestamp does not exist");
-        }
-
-        const logTypeIdx: number = Number(segment.logTypes[i]);
-        const logType: Uint8Array | undefined = logTypeDict[logTypeIdx];
-        if (!logType) {
-            throw new Error("Log type does not exist");
-        }
-
-        const [dictVars, encodedVars] = getLogEventVariables(
-            logType,
-            variablesIterator,
-            varDict
-        );
-
-        const logLevel: LOG_LEVEL = getLogLevel(logType);
-
-        const logEvent: LogEvent = {
-            timestamp: timestamp,
-            logLevel: logLevel,
-            logType: logType,
-            dictVars: dictVars,
-            encodedVars: encodedVars,
-        };
-
-        logEvents.push(logEvent);
+  const numMessages: number = segment.timestamps.length;
+  for (let i = 0; i < numMessages; i++) {
+    const timestamp: bigint | undefined = segment.timestamps[i];
+    if (!timestamp) {
+      throw new Error("Timestamp does not exist");
     }
+
+    const logTypeIdx: number = Number(segment.logTypes[i]);
+    const logType: Uint8Array | undefined = logTypeDict[logTypeIdx];
+    if (!logType) {
+      throw new Error("Log type does not exist");
+    }
+
+    const [dictVars, encodedVars] = getLogEventVariables(
+        logType,
+        variablesIterator,
+        varDict
+    );
+
+    const logLevel: LOG_LEVEL = getLogLevel(logType);
+
+    const logEvent: ArchiveLogEvent = {
+      timestamp: timestamp,
+      logLevel: logLevel,
+      logType: logType,
+      dictVars: dictVars,
+      encodedVars: encodedVars,
+    };
+
+    logEvents.push(logEvent);
+  }
 };
 
 /**
- * Retrieves dictionary and encoded variables for a specific log message. Traverses log type
- * until a placeholder variable is found. For each variable found, a value is popped from the
- * segment variables array. If the variable is an encoded variable, the encoded value is the
- * value from the segment. If the variable is a dictionary variable, the segment value is used
- * to index into the archive's variable dictionary, and the lookup value is the dictionary
- * variable. Dictionary and encoded variables are distinguished by different byte placeholders.
- * the function returns two arrays, one for each dictionary variables, and the other for encoded
- * variables.
+ * Retrieves dictionary and encoded variables for a specific log message.
+ * Traverses log type until a variable placeholder is found. For each
+ * variable placeholder found, a value is popped from the segment variables array.
+ * Dictionary and encoded variables are distinguished by different byte
+ * placeholders. If the variable is a dictionary variable, the value is used
+ * to index into the archive's variable dictionary, and the lookup result is
+ * added to its array. If the variable is an encoded variable, the value is simply
+ * added to its array. The function returns two arrays. First for dictionary
+ * variables, and second for encoded variables.
  *
  * @param logType Log with placeholders for variables.
  * @param segmentVarIterator Iterator for segment variables.
+ * @param varDict Archive variable dictionary.
  * @return Two arrays, the first for dictionary variables and the second for encoded variables.
  */
 const getLogEventVariables = (
@@ -173,27 +174,27 @@ const getLogEventVariables = (
     segmentVarIterator: Iterator<bigint>,
     varDict: Uint8Array[]
 ): [Uint8Array[], bigint[]] => {
-    const dictVars: Uint8Array[] = [];
-    const encodedVars: bigint[] = [];
+  const dictVars: Uint8Array[] = [];
+  const encodedVars: bigint[] = [];
 
-    logType.forEach((logTypeCharByte) => {
-        switch (logTypeCharByte) {
-            case Placeholder.Integer || Placeholder.Float:
-                const encodedVar: bigint = segmentVarIterator.next().value;
-                encodedVars.push(encodedVar);
-                break;
+  logType.forEach((logTypeCharByte) => {
+    switch (logTypeCharByte) {
+      case Placeholder.Integer || Placeholder.Float:
+        const encodedVar: bigint = segmentVarIterator.next().value;
+        encodedVars.push(encodedVar);
+        break;
 
-            case Placeholder.Dictionary:
-                const index: number = Number(segmentVarIterator.next().value);
-                if (typeof varDict[index] === "undefined") {
-                    throw new Error("Log type does not exist");
-                }
-                const dictVar: Uint8Array = varDict[index];
-                dictVars.push(dictVar);
-                break;
+      case Placeholder.Dictionary:
+        const index: number = segmentVarIterator.next().value;
+        const dictVar: Uint8Array | undefined = varDict[index];
+        if (!dictVar) {
+          throw new Error("Variable at index ${index} does not exist");
         }
-    });
-    return [dictVars, encodedVars];
+        dictVars.push(dictVar);
+        break;
+    }
+  });
+  return [dictVars, encodedVars];
 };
 
 /**
@@ -203,40 +204,36 @@ const getLogEventVariables = (
  * @return The log level.
  */
 const getLogLevel = (logType: Uint8Array): LOG_LEVEL => {
-    const textDecoder: TextDecoder = new TextDecoder();
-    const message = textDecoder.decode(logType);
+  const textDecoder: TextDecoder = new TextDecoder();
+  const decodedLogType: string = textDecoder.decode(logType);
 
-    // Default log level value.
-    let logLevel: LOG_LEVEL = LOG_LEVEL.NONE;
+  // Default log level value.
+  let logLevelValue: LOG_LEVEL = LOG_LEVEL.NONE;
 
-    // Offset from start of logType to beginning of log level. This is normally a single space.
-    // Note log type should not include the timestamp.
-    const LogLevelPositionInMessages: number = 1;
+  // Offset from start of logType to beginning of log level. This is normally a single space.
+  // Note log type should not include the timestamp.
+  const logLevelPositionInLogType: number = 1;
 
-    const messageLevelPart: string = message.substring(
-        LogLevelPositionInMessages
-    );
+  const logTypeSubString: string = decodedLogType.substring(
+      logLevelPositionInLogType
+  );
 
-    const ValidLogLevelsBeginIdx: number = 1;
+  const validLogLevelsBeginIdx: number = 1;
 
-    // Excluded NONE as a valid log level.
-    const validNames: string[] = LOG_LEVEL_NAMES_LIST.slice(
-        ValidLogLevelsBeginIdx
-    );
+  // Excluded NONE as a valid log level.
+  const validLevelNames: string[] = LOG_LEVEL_NAMES_LIST.slice(
+      validLogLevelsBeginIdx
+  );
 
-    const logLevelFound: string | undefined = validNames.find((level: string) =>
-        messageLevelPart.startsWith(level)
-    );
+  const logLevelNameFound: string | undefined = validLevelNames.find((level: string) =>
+    logTypeSubString.startsWith(level)
+  );
 
-    if (logLevelFound) {
-        logLevel = LOG_LEVEL_NAMES_LIST.indexOf(logLevelFound);
-    }
+  if (logLevelNameFound) {
+    logLevelValue = LOG_LEVEL_NAMES_LIST.indexOf(logLevelNameFound);
+  }
 
-    return logLevel;
+  return logLevelValue;
 };
 
-export {
-    deserializeSegments
-};
-
-
+export {deserializeSegments};
