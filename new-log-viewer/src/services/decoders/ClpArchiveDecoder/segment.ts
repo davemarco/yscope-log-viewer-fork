@@ -22,7 +22,7 @@ interface Segment {
  * @param dataInputStream Byte stream containing single file archive with offset
  * at start of segments.
  * @param segmentSize Array of byte sizes for each segment in archive.
- * @param segmentInfos Byte sizes for non-segment archive files.
+ * @param segmentInfos Segment metadata.
  * @param logTypeDict Archive log type dictionary.
  * @param varDict Archive variable dictionary.
  * @return Array with combined log events from all segments.
@@ -36,16 +36,16 @@ const deserializeSegments = async (
 ): Promise<ArchiveLogEvent[]> => {
   const logEvents: ArchiveLogEvent[] = [];
   for (let index = 0; index < segmentSizes.length; index++) {
-    const size: number | undefined = segmentSizes[index];
+    const segmentSize: number | undefined = segmentSizes[index];
     const segmentInfo: SegmentInfo | undefined = segmentInfos[index];
 
-    if (!size || !segmentInfo) {
+    if (!segmentSize || !segmentInfo) {
       throw new Error("Segment metadata was not found");
     }
 
     const segment: Segment = await deserializeSegment(
         dataInputStream,
-        size,
+        segmentSize,
         segmentInfo
     );
 
@@ -155,19 +155,20 @@ const toLogEvents = (
 
 /**
  * Retrieves dictionary and encoded variables for a specific log message.
- * Traverses log type until a variable placeholder is found. For each
- * variable placeholder found, a value is popped from the segment variables array.
- * Dictionary and encoded variables are distinguished by different byte
- * placeholders. If the variable is a dictionary variable, the value is used
- * to index into the archive's variable dictionary, and the lookup result is
- * added to its array. If the variable is an encoded variable, the value is simply
- * added to its array. The function returns two arrays. First for dictionary
- * variables, and second for encoded variables.
+ * The function returns two arrays; The first for dictionary variables,
+ * and the second for encoded variables. Traverses log type until a variable
+ * placeholder is found. For each variable placeholder found, a value is
+ * popped from the segment variables array. Dictionary and encoded variables
+ * are distinguished by different byte placeholders. If the variable is a
+ * dictionary variable, the value is used to index into the archive's variable
+ * dictionary, and the lookup result is added to dictionary array. If the variable is
+ * an encoded variable, the value is simply added to encoded array.
  *
  * @param logType Log with placeholders for variables.
  * @param segmentVarIterator Iterator for segment variables.
  * @param varDict Archive variable dictionary.
- * @return Two arrays, the first for dictionary variables and the second for encoded variables.
+ * @return Two arrays, the first for dictionary variables and the second for
+ * encoded variables.
  */
 const getLogEventVariables = (
     logType: Uint8Array,

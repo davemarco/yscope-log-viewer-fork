@@ -37,7 +37,7 @@ class ClpArchiveDecoder implements Decoder {
    * invoked publicly. Instead, use ClpArchiveDecoder.create() to create a
    * new instance of the class.
    *
-   * @param dataInputStream Byte stream containing segment data with offset
+   * @param dataInputStream Byte array containing single file archive with offset
    * at start of segments.
    * @param segmentSizes Byte sizes for segments.
    * @param segmentInfos Metadata for segments.
@@ -59,13 +59,11 @@ class ClpArchiveDecoder implements Decoder {
   }
 
   /**
-   * Creates a new ClpArchiveDecoder. Deserializes the single archive header,
-   * the CLP archive metadata, and the archive dictionaries. The returned
-   * decoder is in a state to deserialize segment data.
+   * Creates a new ClpArchiveDecoder. Deserializes the single archive header
+   * metadata, the CLP archive metadata, and the archive dictionaries. The
+   * returned decoder state is ready to deserialize segment data.
    *
-   * @param dataArray Byte array containing single file archive. When this
-   * method returns, the position of the data array will be the start of
-   * segment data.
+   * @param dataArray Byte array containing single file archive.
    * @return A Promise that resolves to the created ClpArchiveDecoder instance.
    */
   static async create (dataArray: Uint8Array): Promise<ClpArchiveDecoder> {
@@ -80,7 +78,7 @@ class ClpArchiveDecoder implements Decoder {
 
     const segmentInfos: SegmentInfo[] = await querySegmentInfos(
         dataInputStream,
-        nonSegmentSizes.metadataDB
+        nonSegmentSizes.metadataDb
     );
 
     const logTypeDict: Uint8Array[] = await ClpArchiveDecoder.#deserializeDictionary(
@@ -152,10 +150,9 @@ class ClpArchiveDecoder implements Decoder {
         throw new Error("Log event at index ${logEventIdx} does not exist");
       }
 
-      const message: string = toMessage(logEvent, textDecoder);
       const logLevel: LOG_LEVEL = logEvent.logLevel;
       const timestamp: bigint = logEvent.timestamp;
-
+      const message: string = toMessage(logEvent, textDecoder);
       results.push([message, Number(timestamp), logLevel, logEventIdx + 1]);
     }
 

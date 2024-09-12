@@ -14,7 +14,7 @@ type SegmentFileSizes = number[];
  * Byte sizes for non-segment archive files.
  */
 interface NonSegmentFileSizes {
-  metadataDB: number;
+  metadataDb: number;
   logTypeDict: number;
   logTypeSegIndex: number;
   varDict: number;
@@ -22,7 +22,7 @@ interface NonSegmentFileSizes {
 }
 
 /**
- * Segment Metadata.
+ * Segment metadata.
  */
 interface SegmentInfo {
   numMessages: number;
@@ -72,28 +72,28 @@ const deserializeHeaderMetadata = (
 };
 
 /**
- * Parse single file archive metadata to retrieve byte sizes of all files
- * in the archive. The sizes are needed to accurately decode individual files.
+ * Parse header metadata to retrieve byte sizes of all files in the archive.
+ * The sizes are needed to accurately decode individual files.
  *
- * @param singleFileArchiveMetadata Metadata containing archived file sizes.
+ * @param headerMetadata Metadata containing archived file sizes.
  * @return Array with two elements. First element contains sizes of non-segment
  * files. Second element contains the size for each segment.
  */
 const parseHeaderMetadata = (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    singleFileArchiveMetadata: any
+    headerMetadata: any
 ): [NonSegmentFileSizes, SegmentFileSizes] => {
-  if (!singleFileArchiveMetadata.archive_files) {
+  if (!headerMetadata.archive_files) {
     throw new Error("Archive file metadata not found");
   }
 
   // Array of files in the archive each containing a name (fileInfo.n) and an
   // offset (fileInfo.o).
-  const fileInfos = singleFileArchiveMetadata.archive_files;
+  const fileInfos = headerMetadata.archive_files;
 
   // Create null instances to fill in afterwards.
   const nonSegmentSizes: NonSegmentFileSizes = {
-    metadataDB: 0,
+    metadataDb: 0,
     logTypeDict: 0,
     logTypeSegIndex: 0,
     varDict: 0,
@@ -114,7 +114,7 @@ const parseHeaderMetadata = (
     if (false === isSegment(name)) {
       switch (name) {
         case "metadata.db":
-          nonSegmentSizes.metadataDB = size;
+          nonSegmentSizes.metadataDb = size;
           break;
         case "logtype.dict":
           nonSegmentSizes.logTypeDict = size;
@@ -155,19 +155,19 @@ const isSegment = (name: string) => {
  *
  * @param dataInputStream Byte stream containing single file archive with
  * offset at start of database.
- * @param metadataDBsize Byte size of database.
+ * @param metadataDbSize Byte size of database.
  * @return Array containing metadata for each segment.
  */
 const querySegmentInfos = async (
     dataInputStream: DataInputStream,
-    metadataDBsize: number
+    metadataDbSize: number
 ): Promise<SegmentInfo[]> => {
   // Required to load the sqljs wasm binary asynchronously.
   const SQL: initSqlJs.SqlJsStatic = await initSqlJs({
     locateFile: (file) => `static/js/${file}`,
   });
 
-  const dbBytes: Uint8Array = dataInputStream.readFully(metadataDBsize);
+  const dbBytes: Uint8Array = dataInputStream.readFully(metadataDbSize);
 
   const db = new SQL.Database(dbBytes);
   const queryResult: initSqlJs.QueryExecResult[] = db.exec(`

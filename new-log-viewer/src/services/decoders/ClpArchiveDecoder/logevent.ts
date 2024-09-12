@@ -7,7 +7,7 @@ import {Placeholder} from "../../../typings/placeholder";
 dayjs.extend(bigIntSupport);
 
 /**
- * IR-like logEvent retrieved from CLP archive.
+ * IR-like log event retrieved from CLP archive.
  */
 interface ArchiveLogEvent {
   timestamp: bigint;
