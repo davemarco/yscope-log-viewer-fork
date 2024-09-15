@@ -71,7 +71,7 @@ class LogFileManager {
     ) {
         this.#fileName = fileName;
         this.#pageSize = pageSize;
-        this.#decoder = decoder;
+        this.#decoder = decoder; sadas dassad 
 
         // Build index for the entire file
         const buildIdxResult = decoder.buildIdx(0, LOG_EVENT_FILE_END_IDX);
