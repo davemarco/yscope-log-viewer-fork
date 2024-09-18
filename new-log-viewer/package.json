@@ -6,13 +6,11 @@
   "scripts": {
     "build": "webpack --config webpack.prod.js",
     "start": "webpack serve --open --config webpack.dev.js",
-
     "lint": "npm run lint:check",
     "lint:check": "npm-run-all --sequential --continue-on-error lint:css-check lint:js-check",
     "lint:fix": "npm-run-all --sequential --continue-on-error lint:css-fix lint:js-fix",
-
     "lint:css-check": "stylelint src/**/*.css",
-    "lint:css-ci": "npm run lint:css-check -- --formatter github",
+    "lint:css-ci": "npm run lint:css-check -- --custom-formatter=stylelint-actions-formatters",
     "lint:css-fix": "npm run lint:css-check -- --fix",
     "lint:js-check": "eslint src webpack.*.js --max-warnings 0",
     "lint:js-fix": "npm run lint:js-check -- --fix"
@@ -61,6 +59,7 @@
     "react-refresh": "^0.14.2",
     "style-loader": "^4.0.0",
     "stylelint": "^16.9.0",
+    "stylelint-actions-formatters": "^16.3.1",
     "stylelint-config-clean-order": "^6.1.0",
     "stylelint-config-standard": "^36.0.1",
     "stylelint-prettier": "^5.0.2",
