@@ -22,7 +22,7 @@ interface DropFileContextProviderProps {
  */
 const DropFileContainer = ({children}: DropFileContextProviderProps) => {
     const {loadFile} = useContext(StateContext);
-    const [isFileHovering, setIsFileHovering] = useState(false);
+             [isFileHovering, setIsFileHovering] = useState(false);
 
     const handleDrag = (ev: React.DragEvent<HTMLDivElement>) => {
         ev.preventDefault();
