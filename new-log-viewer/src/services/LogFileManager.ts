@@ -17,7 +17,7 @@ import {getBasenameFromUrlOrDefault} from "../utils/url";
 import ClpIrDecoder from "./decoders/ClpIrDecoder";
 import JsonlDecoder from "./decoders/JsonlDecoder";
 import ClpDecoder from "./decoders/ClpDecoder";
-import ClpArchiveDecoder from "./decoders/ClpArchiveDecoder/ClpArchiveDecoder";
+import ClpArchiveDecoder from "./decoders/ClpArchiveDecoder";
 
 
 /**
