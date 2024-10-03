@@ -112,14 +112,7 @@ class ClpArchiveDecoder implements Decoder {
     return this.#logEvents.length;
   }
 
-  async buildIdx (
-      beginIdx: number,
-      endIdx: number
-  ): Promise<Nullable<LogEventCount>> {
-    if (0 !== beginIdx || endIdx !== LOG_EVENT_FILE_END_IDX) {
-      throw new Error("Partial range deserialization is not yet supported.");
-    }
-
+  async build (): Promise<Nullable<LogEventCount>> {
     this.#logEvents = await deserializeSegments(this.#dataInputStream,
         this.#segmentSizes,
         this.#segmentInfos,
