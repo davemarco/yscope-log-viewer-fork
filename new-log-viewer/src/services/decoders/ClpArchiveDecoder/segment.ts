@@ -1,4 +1,4 @@
-import {LOG_LEVEL, LOG_LEVEL_NAMES_LIST} from "../../../typings/logs";
+import {LOG_LEVEL, LOG_LEVEL_NAMES} from "../../../typings/logs";
 import {Placeholder} from "../../../typings/placeholder";
 import {DataInputStream} from "../../../utils/datastream";
 import {lzmaDecompress} from "../../../utils/xz";
@@ -122,14 +122,15 @@ const toLogEvents = (
 
   const numMessages: number = segment.timestamps.length;
   for (let i = 0; i < numMessages; i++) {
+
     const timestamp: bigint | undefined = segment.timestamps[i];
-    if (!timestamp) {
+    if (timestamp === undefined) {
       throw new Error("Timestamp does not exist");
     }
 
     const logTypeIdx: number = Number(segment.logTypes[i]);
     const logType: Uint8Array | undefined = logTypeDict[logTypeIdx];
-    if (!logType) {
+    if (undefined === logType) {
       throw new Error("Log type does not exist");
     }
 
@@ -188,7 +189,7 @@ const getLogEventVariables = (
       case Placeholder.Dictionary:
         const index: number = segmentVarIterator.next().value;
         const dictVar: Uint8Array | undefined = varDict[index];
-        if (!dictVar) {
+        if (undefined === dictVar) {
           throw new Error("Variable at index ${index} does not exist");
         }
         dictVars.push(dictVar);
@@ -209,7 +210,7 @@ const getLogLevel = (logType: Uint8Array): LOG_LEVEL => {
   const decodedLogType: string = textDecoder.decode(logType);
 
   // Default log level value.
-  let logLevelValue: LOG_LEVEL = LOG_LEVEL.NONE;
+  let logLevelValue: LOG_LEVEL = LOG_LEVEL.UNKNOWN;
 
   // Offset from start of logType to beginning of log level. This is normally a single space.
   // Note log type should not include the timestamp.
@@ -222,7 +223,7 @@ const getLogLevel = (logType: Uint8Array): LOG_LEVEL => {
   const validLogLevelsBeginIdx: number = 1;
 
   // Excluded NONE as a valid log level.
-  const validLevelNames: string[] = LOG_LEVEL_NAMES_LIST.slice(
+  const validLevelNames: string[] = LOG_LEVEL_NAMES.slice(
       validLogLevelsBeginIdx
   );
 
@@ -231,7 +232,7 @@ const getLogLevel = (logType: Uint8Array): LOG_LEVEL => {
   );
 
   if (logLevelNameFound) {
-    logLevelValue = LOG_LEVEL_NAMES_LIST.indexOf(logLevelNameFound);
+    logLevelValue = LOG_LEVEL_NAMES.indexOf(logLevelNameFound);
   }
 
   return logLevelValue;

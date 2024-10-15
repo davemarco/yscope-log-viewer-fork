@@ -77,7 +77,7 @@ interface Decoder {
      * @return Count of the successfully deserialized ("valid") log events and count of any
      * un-deserializable ("invalid") log events.
      */
-    build(): LogEventCount;
+    build(): Promise<LogEventCount>;
 
     /**
      * Sets any formatter options that exist in the decoder's options.

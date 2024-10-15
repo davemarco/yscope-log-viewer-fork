@@ -70,7 +70,7 @@ class JsonlDecoder implements Decoder {
         return true;
     }
 
-    build (): LogEventCount {
+    async build (): Promise<LogEventCount> {
         this.#deserialize();
 
         const numInvalidEvents = this.#invalidLogEventIdxToRawLine.size;

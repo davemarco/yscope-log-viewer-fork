@@ -19,6 +19,7 @@ import {getChunkNum} from "../../utils/math";
 import {formatSizeInBytes} from "../../utils/units";
 import ClpIrDecoder from "../decoders/ClpIrDecoder";
 import JsonlDecoder from "../decoders/JsonlDecoder";
+import ClpArchiveDecoder from "../decoders/ClpArchiveDecoder";
 import {
     getEventNumCursorData,
     getLastEventCursorData,
@@ -61,12 +62,6 @@ class LogFileManager {
         this.#pageSize = pageSize;
         this.#decoder = decoder;
 
-        // Build index for the entire file.
-        const buildResult = decoder.build();
-        if (0 < buildResult.numInvalidEvents) {
-            console.error("Invalid events found in decoder.build():", buildResult);
-        }
-
         this.#numEvents = decoder.getEstimatedNumEvents();
         console.log(`Found ${this.#numEvents} log events.`);
     }
@@ -100,6 +95,12 @@ class LogFileManager {
         const {fileName, fileData} = await loadFile(fileSrc);
         const decoder = await LogFileManager.#initDecoder(fileName, fileData, decoderOptions);
 
+        // Build index for the entire file.
+        const buildResult = await decoder.build();
+        if (0 < buildResult.numInvalidEvents) {
+            console.error("Invalid events found in decoder.build():", buildResult);
+        }
+
         return new LogFileManager(decoder, fileName, fileData.length, pageSize);
     }
 
@@ -120,6 +121,8 @@ class LogFileManager {
         let decoder: Decoder;
         if (fileName.endsWith(".jsonl")) {
             decoder = new JsonlDecoder(fileData, decoderOptions);
+        } else if (fileName.endsWith(".clp")) {
+            decoder = await ClpArchiveDecoder.create(fileData);
         } else if (fileName.endsWith(".clp.zst")) {
             decoder = await ClpIrDecoder.create(fileData);
         } else {

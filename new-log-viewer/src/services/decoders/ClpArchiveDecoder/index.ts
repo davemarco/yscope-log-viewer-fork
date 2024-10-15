@@ -2,11 +2,14 @@ import {Nullable} from "../../../typings/common";
 import {
   Decoder,
   DecodeResultType,
+  FilteredLogEventMap,
   JsonlDecoderOptionsType,
-  LOG_EVENT_FILE_END_IDX,
   LogEventCount
 } from "../../../typings/decoders";
-import {LOG_LEVEL} from "../../../typings/logs";
+import {
+  LOG_LEVEL,
+  LogLevelFilter,
+} from "../../../typings/logs";
 import {DataInputStream} from "../../../utils/datastream";
 import {lzmaDecompress} from "../../../utils/xz";
 import {ArchiveLogEvent, toMessage} from "./logevent";
@@ -112,7 +115,15 @@ class ClpArchiveDecoder implements Decoder {
     return this.#logEvents.length;
   }
 
-  async build (): Promise<Nullable<LogEventCount>> {
+  getFilteredLogEventMap (): FilteredLogEventMap {
+      return null;
+  }
+
+  setLogLevelFilter (logLevelFilter: LogLevelFilter): boolean {
+      return true;
+  }
+
+  async build (): Promise<LogEventCount> {
     this.#logEvents = await deserializeSegments(this.#dataInputStream,
         this.#segmentSizes,
         this.#segmentInfos,
@@ -123,13 +134,17 @@ class ClpArchiveDecoder implements Decoder {
     return {numValidEvents: this.#logEvents.length, numInvalidEvents: 0};
   }
 
+  setFormatterOptions (options: JsonlDecoderOptionsType): boolean {
+    return true;
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   // TODO: To be removed as log level filtering change removes this function.
   setDecoderOptions (options: JsonlDecoderOptionsType): boolean {
     return true;
   }
 
-  decode (beginIdx: number, endIdx: number): Nullable<DecodeResultType[]> {
+  decodeRange (beginIdx: number, endIdx: number, useFilter: boolean): Nullable<DecodeResultType[]> {
     if (0 > beginIdx || this.#logEvents.length < endIdx) {
       return null;
     }

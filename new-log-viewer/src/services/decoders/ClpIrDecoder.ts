@@ -43,7 +43,7 @@ class ClpIrDecoder implements Decoder {
         return true;
     }
 
-    build (): LogEventCount {
+    async build (): Promise<LogEventCount> {
         return {
             numInvalidEvents: 0,
             numValidEvents: this.#streamReader.deserializeStream(),
