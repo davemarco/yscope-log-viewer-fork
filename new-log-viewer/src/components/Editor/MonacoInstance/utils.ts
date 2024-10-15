@@ -1,12 +1,17 @@
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 
-import {ActionType} from "../../../utils/actions";
+import {EditorAction} from "../../../utils/actions";
 import {
     setupCursorExplicitPosChangeCallback,
     setupCustomActions,
     setupFocusOnBacktickDown,
     setupMobileZoom,
 } from "./actions";
+import {
+    LOG_LANGUAGE_NAME,
+    setupCustomLogLanguage,
+} from "./language";
+import {setupThemes} from "./theme";
 import {CustomMonacoEditorHandlers} from "./typings";
 
 
@@ -35,15 +40,19 @@ const goToPositionAndCenter = (
  */
 const createMonacoEditor = (
     editorContainer: HTMLDivElement,
-    actions: ActionType[],
+    actions: EditorAction[],
     handlers: CustomMonacoEditorHandlers
 ): monaco.editor.IStandaloneCodeEditor => {
+    setupCustomLogLanguage();
+    setupThemes();
+
     const editor = monaco.editor.create(
         editorContainer,
         {
             // eslint-disable-next-line no-warning-comments
             // TODO: Add custom observer to debounce automatic layout
             automaticLayout: true,
+            language: LOG_LANGUAGE_NAME,
             maxTokenizationLineLength: 30_000,
             mouseWheelZoom: true,
             readOnly: true,

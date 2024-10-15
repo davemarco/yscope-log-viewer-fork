@@ -4,6 +4,7 @@ import {Nullable} from "../typings/common";
 
 
 enum ACTION_NAME {
+    SPECIFIC_PAGE = "specificPage",
     FIRST_PAGE = "firstPage",
     PREV_PAGE = "prevPage",
     NEXT_PAGE = "nextPage",
@@ -12,7 +13,7 @@ enum ACTION_NAME {
     PAGE_BOTTOM = "pageBottom"
 }
 
-type ActionType = {
+type EditorAction = {
     actionName: Nullable<ACTION_NAME>,
     label: string,
     keyBindings: monaco.KeyCode[],
@@ -23,7 +24,7 @@ type ActionType = {
  * but will be displayed in a help dialog.
  */
 /* eslint-disable sort-keys */
-const EDITOR_ACTIONS : ActionType[] = [
+const EDITOR_ACTIONS : EditorAction[] = [
     {
         actionName: null,
         label: "Focus on Editor",
@@ -62,8 +63,26 @@ const EDITOR_ACTIONS : ActionType[] = [
 ];
 /* eslint-enable sort-keys */
 
+type NavigationActionsMap = {
+    [ACTION_NAME.SPECIFIC_PAGE]: {
+        pageNum: number,
+    },
+    [ACTION_NAME.FIRST_PAGE]: null,
+    [ACTION_NAME.PREV_PAGE]: null,
+    [ACTION_NAME.NEXT_PAGE]: null,
+    [ACTION_NAME.LAST_PAGE]: null,
+};
+
+type NavigationAction = {
+    [T in keyof NavigationActionsMap]:
+    { code: T, args: NavigationActionsMap[T] }
+} [keyof NavigationActionsMap];
+
 export {
     ACTION_NAME,
     EDITOR_ACTIONS,
 };
-export type {ActionType};
+export type {
+    EditorAction,
+    NavigationAction,
+};
