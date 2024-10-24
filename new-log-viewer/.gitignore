@@ -1,9 +1,0 @@
-# Dependencies
-/node_modules
-
-# Build
-/dist
-
-# IDEs
-/.idea
-/.vscode
