@@ -29,6 +29,7 @@ import {deserializeSegments} from "./segment";
  */
 class ClpArchiveDecoder implements Decoder {
   #dataInputStream: DataInputStream;
+  #filteredLogEventMap: FilteredLogEventMap = null;
   #segmentSizes: number[];
   #segmentInfos: SegmentInfo[];
   #logTypeDict: Uint8Array[];
@@ -116,11 +117,24 @@ class ClpArchiveDecoder implements Decoder {
   }
 
   getFilteredLogEventMap (): FilteredLogEventMap {
-      return null;
+    return this.#filteredLogEventMap;
   }
 
   setLogLevelFilter (logLevelFilter: LogLevelFilter): boolean {
-      return true;
+    if (null === logLevelFilter) {
+        this.#filteredLogEventMap = null;
+        return true;
+    }
+
+    const filteredLogEventMap: number[] = [];
+    this.#logEvents.forEach((logEvent, index) => {
+        if (logLevelFilter.includes(logEvent.logLevel)) {
+            filteredLogEventMap.push(index);
+        }
+    });
+    this.#filteredLogEventMap = filteredLogEventMap;
+
+    return true;
   }
 
   async build (): Promise<LogEventCount> {
@@ -134,27 +148,35 @@ class ClpArchiveDecoder implements Decoder {
     return {numValidEvents: this.#logEvents.length, numInvalidEvents: 0};
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setFormatterOptions (options: JsonlDecoderOptionsType): boolean {
     return true;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  // TODO: To be removed as log level filtering change removes this function.
-  setDecoderOptions (options: JsonlDecoderOptionsType): boolean {
-    return true;
-  }
-
   decodeRange (beginIdx: number, endIdx: number, useFilter: boolean): Nullable<DecodeResultType[]> {
-    if (0 > beginIdx || this.#logEvents.length < endIdx) {
+    if (useFilter && null === this.#filteredLogEventMap) {
       return null;
+    }
+
+    const length: number = (useFilter && null !== this.#filteredLogEventMap) ?
+      this.#filteredLogEventMap.length :
+      this.#logEvents.length;
+
+    if (0 > beginIdx || length < endIdx) {
+        return null;
     }
 
     const textDecoder: TextDecoder = new TextDecoder();
     const results: DecodeResultType[] = [];
 
-    for (let logEventIdx = beginIdx; logEventIdx < endIdx; logEventIdx++) {
+    for (let i = beginIdx; i < endIdx; i++) {
+      const logEventIdx: number = (useFilter && null !== this.#filteredLogEventMap) ?
+        (this.#filteredLogEventMap[i] as number) :
+        i;
+
       const logEvent : ArchiveLogEvent | undefined = this.#logEvents[logEventIdx];
-      if (!logEvent) {
+
+      if (logEvent === undefined) {
         throw new Error("Log event at index ${logEventIdx} does not exist");
       }
 

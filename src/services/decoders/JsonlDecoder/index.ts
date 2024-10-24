@@ -65,7 +65,18 @@ class JsonlDecoder implements Decoder {
     }
 
     setLogLevelFilter (logLevelFilter: LogLevelFilter): boolean {
-        this.#filterLogEvents(logLevelFilter);
+        if (null === logLevelFilter) {
+            this.#filteredLogEventMap = null;
+            return true;
+        }
+
+        const filteredLogEventMap: number[] = [];
+        this.#logEvents.forEach((logEvent, index) => {
+            if (logLevelFilter.includes(logEvent.level)) {
+                filteredLogEventMap.push(index);
+            }
+        });
+        this.#filteredLogEventMap = filteredLogEventMap;
 
         return true;
     }
@@ -179,28 +190,6 @@ class JsonlDecoder implements Decoder {
             level,
             timestamp,
         });
-    }
-
-    /**
-     * Filters log events and generates `#filteredLogEventMap`. If `logLevelFilter` is `null`,
-     * `#filteredLogEventMap` will be set to `null`.
-     *
-     * @param logLevelFilter
-     */
-    #filterLogEvents (logLevelFilter: LogLevelFilter) {
-        if (null === logLevelFilter) {
-            this.#filteredLogEventMap = null;
-
-            return;
-        }
-
-        const filteredLogEventMap: number[] = [];
-        this.#logEvents.forEach((logEvent, index) => {
-            if (logLevelFilter.includes(logEvent.level)) {
-                filteredLogEventMap.push(index);
-            }
-        });
-        this.#filteredLogEventMap = filteredLogEventMap;
     }
 
     /**
