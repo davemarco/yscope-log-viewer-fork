@@ -67,6 +67,7 @@ class JsonlDecoder implements Decoder {
     setLogLevelFilter (logLevelFilter: LogLevelFilter): boolean {
         if (null === logLevelFilter) {
             this.#filteredLogEventMap = null;
+
             return true;
         }
 
@@ -86,10 +87,10 @@ class JsonlDecoder implements Decoder {
 
         const numInvalidEvents = this.#invalidLogEventIdxToRawLine.size;
 
-        return {
+        return Promise.resolve({
             numValidEvents: this.#logEvents.length - numInvalidEvents,
             numInvalidEvents: numInvalidEvents,
-        };
+        });
     }
 
     setFormatterOptions (options: JsonlDecoderOptionsType): boolean {

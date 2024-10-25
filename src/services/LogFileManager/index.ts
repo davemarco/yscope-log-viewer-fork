@@ -23,9 +23,9 @@ import {
 import {getChunkNum} from "../../utils/math";
 import {defer} from "../../utils/time";
 import {formatSizeInBytes} from "../../utils/units";
+import ClpArchiveDecoder from "../decoders/ClpArchiveDecoder";
 import ClpIrDecoder from "../decoders/ClpIrDecoder";
 import JsonlDecoder from "../decoders/JsonlDecoder";
-import ClpArchiveDecoder from "../decoders/ClpArchiveDecoder";
 import {
     getEventNumCursorData,
     getLastEventCursorData,

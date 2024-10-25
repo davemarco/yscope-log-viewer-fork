@@ -44,10 +44,10 @@ class ClpIrDecoder implements Decoder {
     }
 
     async build (): Promise<LogEventCount> {
-        return {
+        return Promise.resolve({
             numInvalidEvents: 0,
             numValidEvents: this.#streamReader.deserializeStream(),
-        };
+        });
     }
 
     // eslint-disable-next-line class-methods-use-this

@@ -161,12 +161,12 @@ module.exports = {
     ],
     resolve: {
         fallback: {
-            "crypto": require.resolve("crypto-browserify"),
-            "stream": require.resolve("stream-browserify"),
-            "buffer": require.resolve("buffer/"),
-            "path": false,
-            "fs": false,
-            "vm": false,
+            buffer: require.resolve("buffer/"),
+            crypto: require.resolve("crypto-browserify"),
+            fs: false,
+            path: false,
+            stream: require.resolve("stream-browserify"),
+            vm: false,
         },
         extensions: [
             ".js",

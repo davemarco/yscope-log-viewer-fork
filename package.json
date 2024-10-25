@@ -30,6 +30,7 @@
     "@msgpack/msgpack": "^3.0.0-beta2",
     "@mui/icons-material": "^6.1.0",
     "@mui/joy": "^5.0.0-beta.48",
+    "@types/sql.js": "^1.4.9",
     "axios": "^1.7.2",
     "browserify-fs": "^1.0.0",
     "buffer": "^6.0.3",

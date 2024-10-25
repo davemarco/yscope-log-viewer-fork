@@ -1,15 +1,16 @@
 /**
  * CLP log type placeholders.
  */
-class Placeholder {
-    static readonly Integer: number = 0x11;
-    static readonly Dictionary: number = 0x12;
-    static readonly Float: number = 0x13;
-    // TODO: escape functionality not implemented.
-    static readonly Escape: string = "\\";
-}
+const INTEGER_PLACEHOLDER = 0x11;
+const DICTIONARY_PLACEHOLDER = 0x12;
+const FLOAT_PLACEHOLDER = 0x13;
+
+// Not currently supported.
+const ESCAPE_PLACEHOLDER = "\\";
 
 export {
-    Placeholder
+    DICTIONARY_PLACEHOLDER,
+    ESCAPE_PLACEHOLDER,
+    FLOAT_PLACEHOLDER,
+    INTEGER_PLACEHOLDER,
 };
-
