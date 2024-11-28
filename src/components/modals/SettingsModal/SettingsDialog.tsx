@@ -48,8 +48,8 @@ const CONFIG_FORM_FIELDS = [
                     documentation
                 </Link>
                 {" "}
-                for format string syntax. Note a blank format string will output the entire
-                log event as JSON.
+                for format string syntax. Leave format string blank to display the entire log event
+                formatted as JSON.
             </p>
         ),
         initialValue: getConfig(CONFIG_KEY.DECODER_OPTIONS).formatString,
