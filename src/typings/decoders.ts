@@ -104,6 +104,8 @@ export type {
     ActiveLogCollectionEventIdx,
     Decoder,
     DecodeResult,
+    ParsedDecoderOptions,
+    ParsedFilterKey,
     DecoderOptions,
     FilteredLogEventMap,
     LogEventCount,

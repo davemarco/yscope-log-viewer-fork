@@ -24,6 +24,9 @@ import {
     EXPORT_LOGS_CHUNK_SIZE,
     QUERY_CHUNK_SIZE,
 } from "../../utils/config";
+import {
+    parseDecoderOptions,
+} from "../../utils/decoders";
 import {getChunkNum} from "../../utils/math";
 import {defer} from "../../utils/time";
 import {formatSizeInBytes} from "../../utils/units";

@@ -1,5 +1,6 @@
 import {
     ActiveLogCollectionEventIdx,
+    DecoderOptions,
     FilteredLogEventMap,
 } from "../../typings/decoders";
 import {
